@@ -1,0 +1,86 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>SportStore</name>
+    </assembly>
+    <members>
+        <member name="M:SportStore.Controllers.AuthenticationController.Login(SportStore.Models.Dtos.UserLoginDTO)">
+            <summary>
+            Login and Request Token
+            </summary>
+            <param name="credentials"></param>
+            <response code="200">User logged in successfully.</response>
+            <response code="400">The inputs supplied to the API are invalid!.</response> 
+            <response code="default">Default !.</response> 
+            <returns>The created <see cref="T:Microsoft.AspNetCore.Mvc.BadRequestResult"/> for the response.</returns>
+            <remarks>
+            Schema:
+            
+                {
+                    "username": "user01",
+                    "password": "user01"
+                }
+            </remarks>
+        </member>
+        <member name="M:SportStore.Controllers.AuthenticationController.SignUp(SportStore.Models.Dtos.UserAddDTO)">
+            <summary>
+            Register new user !..
+            </summary>
+            <param name="userDTO"></param>
+            <response code="201">User created successfully and logged in.</response>
+            <response code="400">The inputs supplied to the API are invalid!.</response> 
+            <response code="default">Default !.</response> 
+            <returns></returns>
+            <remarks>
+            Schema:
+            
+                {
+                    "username": "user00",
+                    "password": "123456",
+                    "email": "example@domain.com"
+                }
+            </remarks>
+        </member>
+        <member name="M:SportStore.Controllers.ProductsController.GetAllProducts(SportStore.Models.QueryParametrs)">
+            <summary>
+            Get All Products With Pagination Options
+            </summary>
+            <param name="query"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SportStore.Controllers.ProductsController.AddProduct(SportStore.Models.Entities.Product)">
+            <summary>
+            Test The Policy and Token.
+            </summary>
+            <response code="200"> Everything went well!!. </response>
+            <response code="401"> Unauthorized: Should login to call this endpoint!.</response>
+            <response code="403"> Unauthorized: The user do not have access to this Action!.</response>
+            <response code="default"> Error!.</response>
+        </member>
+        <member name="M:SportStore.Controllers.ProductsController.UpdateFullProductAsync(System.Int32,Microsoft.AspNetCore.JsonPatch.JsonPatchDocument{SportStore.Models.Entities.Product})">
+            <summary>
+            Product Partial Update
+            </summary>
+            <remarks>
+            Simpe Schema
+            
+                PATCH / product
+                {
+                   "op": "replace",
+                   "path": "sku",
+                   "value": "test value"
+                } 
+            </remarks>
+            <param name="id"></param>
+            <param name="product"></param>
+            <returns></returns>
+        </member>
+        <member name="M:SportStore.Controllers.ProductsV2Controller.GetAllProducts(SportStore.Models.Dtos.PagingDTO,SportStore.Models.Dtos.SortingDTO,SportStore.Models.Dtos.SearchingDTO)">
+            <summary>
+            Get All Products With Pagination Options
+            </summary>
+            <param name="query"></param>
+            <returns></returns>
+        </member>
+    </members>
+</doc>
