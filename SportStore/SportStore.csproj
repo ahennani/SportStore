@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <DocumentationFile>D:\..Growing\..Projects\WEB\BACKEND\..WebAPI\Projects\SportStore\SportStore\SportStore.xml</DocumentationFile>
+    <DocumentationFile>D:\..Growing\..Coding\..WEB\BACKEND\WebAPI\Projects\SportStore\SportStore\SportStore.xml</DocumentationFile>
     <NoWarn>1701;1702,1591</NoWarn>
   </PropertyGroup>
 

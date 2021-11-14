@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
@@ -8,6 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using SportStore.Data;
 using SportStore.Extensions;
+using SportStore.Models;
 using System;
 
 namespace SportStore
@@ -29,6 +31,16 @@ namespace SportStore
             services.ConfigureApiVersioning();
             services.ConfigureJwt(Configuration);
             services.ConfigureServices(Configuration);
+
+            services.Configure<ApiBehaviorOptions>(options =>
+            {
+                // Fires when The ModelState is not valid.
+                options.InvalidModelStateResponseFactory = context =>
+                {
+                        var errorResponse = new ApiError(context.ModelState);
+                        return new BadRequestObjectResult(errorResponse);
+                };
+            });
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IApiVersionDescriptionProvider provider)
@@ -61,8 +73,6 @@ namespace SportStore
 
                 foreach (var description in provider.ApiVersionDescriptions)
                 {
-                    var t1 = description.GroupName;
-                    var t2 = description.GroupName.ToUpperInvariant();
                     options.SwaggerEndpoint($"/swagger/{description.GroupName}/swagger.json", description.GroupName.ToUpperInvariant());
                 }
 

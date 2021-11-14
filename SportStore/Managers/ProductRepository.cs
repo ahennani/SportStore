@@ -18,25 +18,25 @@ namespace SportStore.Managers
             _dbContext = dbContext;
         }
 
-        public async Task<bool> SaveChangesAsync() => await _dbContext.SaveChangesAsync() > 0;
+        public async Task<bool> SaveChangesAsync()
+            => await _dbContext.SaveChangesAsync() > 0;
+
+        public Task<IQueryable<Product>> GetAllAsync()
+            => Task.Run(() => _dbContext.Products.Include(p => p.Category).AsQueryable());
+
+        public Task<Product> GetByIdAsync(Guid id)
+            => _dbContext.Products.Include(p => p.Category)
+                                  .Where(p => p.ProductId == id)
+                                  .SingleOrDefaultAsync();
 
         public async Task<Product> AddAsync(Product product)
         {
-            var entity = await _dbContext.AddAsync(product);
-            var result = await SaveChangesAsync();
-            return result ? entity.Entity : null;
-        }
-
-        public async Task<Product> GetByIdAsync(Guid id)
-        {
-            var product = await _dbContext.Products.Include(p => p.Category)
-                                                   .Where(p => p.ProductId == id)
-                                                   .FirstOrDefaultAsync();
             if (product is null)
                 return null;
 
-            _dbContext.Entry(product).State = EntityState.Detached;
-            return product;
+            var entity = await _dbContext.AddAsync(product);
+
+            return (await SaveChangesAsync()) ? entity.Entity : null;
         }
 
         public async Task<Product> DeleteAsync(Guid id)
@@ -54,27 +54,18 @@ namespace SportStore.Managers
         public Task<bool> DeleteRangeAsync(List<Product> products)
         {
             _dbContext.Products.RemoveRange(products);
-            var result = SaveChangesAsync();
 
-            return result;
+            return SaveChangesAsync();
         }
 
-        public async Task<Product> UpdateAsync(Guid id, Product product)
+        public async Task<Product> UpdateAsync(Product product)
         {
             if (product is null)
                 return null;
 
-            _dbContext.Entry(product).State = EntityState.Modified;
+            var entity = _dbContext.Products.Update(product);
 
-            var result = await SaveChangesAsync();
-
-            return result ? product : null;
+            return await SaveChangesAsync() ? entity.Entity : null;
         }
-
-        public Task<IQueryable<Product>> ListAsync() => Task.Run(() => _dbContext.Products
-                                                                                 .Include(p => p.Category)
-                                                                                 .AsNoTracking()
-                                                                                 .AsQueryable());
-
     }
 }

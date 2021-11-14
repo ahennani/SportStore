@@ -10,8 +10,8 @@ using SportStore.Data;
 namespace SportStore.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20211026221143_t2")]
-    partial class t2
+    [Migration("20211114222508_InitialMigration")]
+    partial class InitialMigration
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -77,7 +77,8 @@ namespace SportStore.Data.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<decimal>("Price")
-                        .HasColumnType("decimal(18,2)");
+                        .HasPrecision(10, 2)
+                        .HasColumnType("decimal(10,2)");
 
                     b.Property<int>("Quantity")
                         .HasColumnType("int");

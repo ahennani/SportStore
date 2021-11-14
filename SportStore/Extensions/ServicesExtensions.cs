@@ -37,11 +37,12 @@ namespace SportStore.Extensions
 
             services.AddTransient<IUserManager, UserManager>();
             services.AddTransient<IAuthenticationManager, AuthenticationManager>();
+            services.AddTransient<IConfigureOptions<SwaggerGenOptions>, ConfigureSwaggerOptions>();
 
             services.AddScoped<IStoreRepository<Product>, ProductRepository>();
-            //// TODO: Implementing CategoryRepository & OrderRepository
-            //services.AddScoped<IStoreRepository<Category>, CategoryRepository>();
-            //services.AddScoped<IStoreRepository<Order>, OrderRepository>();
+            services.AddScoped<IStoreRepository<Category>, CategoryRepository>();
+            services.AddScoped<IStoreRepository<Order>, OrderRepository>();
+            services.AddScoped<IOrderManager, OrderManager>();
         }
 
         public static void ConfigureMvc(this IServiceCollection services)
@@ -61,7 +62,6 @@ namespace SportStore.Extensions
 
         public static void ConfigureSwagger(this IServiceCollection services)
         {
-            services.AddTransient<IConfigureOptions<SwaggerGenOptions>, ConfigureSwaggerOptions>();
 
             services.AddSwaggerGen(c =>
             {
@@ -94,8 +94,7 @@ namespace SportStore.Extensions
                 var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
                 c.IncludeXmlComments(xmlPath, includeControllerXmlComments: true);
 
-                //c.OrderActionsBy(k => $"{k.RelativePath}_{k.HttpMethod}");
-                c.OrderActionsBy((apiDesc) => $"{apiDesc.ActionDescriptor.RouteValues["controller"]}_{apiDesc.HttpMethod}");
+                c.OrderActionsBy(k => $"{k.RelativePath}_{k.HttpMethod}");
 
                 c.EnableAnnotations();
             })
@@ -127,15 +126,18 @@ namespace SportStore.Extensions
             })
                 .AddJwtBearer(o =>
                 {
-                    o.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+                    o.TokenValidationParameters = new TokenValidationParameters
                     {
-                        ValidateIssuer = false,
-                        ValidateAudience = false,
-                        ValidateLifetime = true,
                         ValidateIssuerSigningKey = true,
+                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.GetSection("secret").Value)),
+						
+                        ValidateIssuer = false,
                         //ValidIssuer = jwtSettings.GetSection("validIssuer").Value,
+							
+                        ValidateAudience = false,
                         //ValidAudience = jwtSettings.GetSection("validAudience").Value,
-                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.GetSection("secret").Value))
+						
+                        ValidateLifetime = true
                     };
                 });
         }

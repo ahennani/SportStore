@@ -35,6 +35,16 @@ namespace SportStore.Managers
             return _dbcontext.Users.SingleOrDefaultAsync(u => u.Email == email);
         }
 
+        public Task<User> FindByIdAsync(Guid id)
+        {
+            return _dbcontext.Users.SingleOrDefaultAsync(u => u.UserId == id);
+        }
+
+        public Task<IQueryable<User>> GetUsers()
+        {
+            return Task.Run(() => _dbcontext.Users.AsNoTracking());
+        }
+
         public async Task<bool> CreateUserAsync(User user, string password)
         {
             if (user is null)
@@ -67,7 +77,8 @@ namespace SportStore.Managers
             var key = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(jwtSettings.GetSection("secret").Value));
             var signingCredentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
             var claims = await GetClaims(user);
-            if (user.UserName is "user01")
+            
+			if (user.UserName is "user01")
             {
                 claims.Add(new Claim(ClaimTypes.Role, "Admin"));
                 claims.Add(new Claim(ClaimTypes.Role, "User"));
@@ -87,8 +98,7 @@ namespace SportStore.Managers
             {
                 Expires = DateTime.UtcNow.AddMinutes(60),
                 SigningCredentials = signingCredentials,
-                Subject = new ClaimsIdentity(claims)
-                //,
+                Subject = new ClaimsIdentity(claims)//,
                 //Audience = jwtSettings.GetSection("validAudience").Value,
                 //Issuer = jwtSettings.GetSection("validIssuer").Value
             };
@@ -109,16 +119,14 @@ namespace SportStore.Managers
 
         #region Private Fields
 
-        private void GererateHash(string Password, out byte[] PasswordHash, out byte[] PasswordSalt)
+        private static void GererateHash(string Password, out byte[] PasswordHash, out byte[] PasswordSalt)
         {
-            using (var hash = new System.Security.Cryptography.HMACSHA512())
-            {
-                PasswordHash = hash.ComputeHash(Encoding.UTF8.GetBytes(Password));
-                PasswordSalt = hash.Key;
-            }
+            using var hash = new System.Security.Cryptography.HMACSHA512();
+            PasswordHash = hash.ComputeHash(Encoding.UTF8.GetBytes(Password));
+            PasswordSalt = hash.Key;
         }
 
-        private bool ValidateHash(string password, byte[] passwordhash, byte[] passwordsalt)
+        private static bool ValidateHash(string password, byte[] passwordhash, byte[] passwordsalt)
         {
             using (var hash = new System.Security.Cryptography.HMACSHA512(passwordsalt))
             {
@@ -132,7 +140,7 @@ namespace SportStore.Managers
             return true;
         }
 
-        private Task<List<Claim>> GetClaims(User user)
+        private static Task<List<Claim>> GetClaims(User user)
         {
             var claims = new List<Claim>() {
                                                new Claim(JwtRegisteredClaimNames.Sub, user.UserName),

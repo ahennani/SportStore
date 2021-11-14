@@ -1,11 +1,11 @@
-﻿using AutoMapper;
-using Microsoft.AspNetCore.Authorization;
+﻿using static SportStore.Helpers.ProductFiltring;
+
+using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using SportStore.Data;
-using SportStore.Models;
+using Microsoft.Extensions.Logging;
 using SportStore.Extensions;
 using SportStore.Managers.Repositories;
 using SportStore.Models.Dtos;
@@ -18,9 +18,9 @@ using System.Linq;
 using System.Net.Mime;
 using System.Reflection;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
 
-namespace SportStore.Controllers
+
+namespace SportStore.Controllers.v1
 {
     [ApiController]
     [Route("products")]
@@ -30,19 +30,29 @@ namespace SportStore.Controllers
     public class ProductsController : ControllerBase
     {
         private readonly IStoreRepository<Product> _productRepository;
+        private readonly IStoreRepository<Category> _categoryRepository;
         private readonly IMapper _mapper;
         private readonly ILogger<ProductsController> _logger;
 
-        public ProductsController(IStoreRepository<Product> productRepository, IMapper mapper, ILogger<ProductsController> logger)
+        public ProductsController
+            (
+                IStoreRepository<Product> productRepository,
+                IStoreRepository<Category> categoryRepository,
+                IMapper mapper,
+                ILogger<ProductsController> logger
+            )
         {
             _productRepository = productRepository;
+            _categoryRepository = categoryRepository;
             _mapper = mapper;
             _logger = logger;
         }
 
+
         #region Endpoints
 
 
+        // GET: /products
         /// <summary>
         /// Get All Products With Pagination Options.
         /// </summary>
@@ -51,17 +61,19 @@ namespace SportStore.Controllers
         /// <param name="searching"></param> 
         /// <response code="200">Return all founded products.</response>
         /// <response code="404">There are no products with elements provided!.</response> 
-        /// <response code="default">Error !.</response> 
-        [HttpGet()] //GET /products
+        /// <response code="default">Error!!</response>
+        [HttpGet()]
         [ProducesResponseType(statusCode: StatusCodes.Status200OK, type: typeof(PagingResult<ProductDTO>))]
         [ProducesResponseType(statusCode: StatusCodes.Status404NotFound)]
         [ProducesDefaultResponseType]
-        public async Task<ActionResult<PagingResult<ProductResult>>> GetAllProducts(
-                                                        [FromQuery] PagingDTO paging,
-                                                        [FromQuery] SortingDTO sorting,
-                                                        [FromQuery] ProductSearchingDTO searching)
+        public async Task<ActionResult<PagingResult<ProductResult>>> GetAllProducts
+            (
+                [FromQuery] PagingDTO paging,
+                [FromQuery] SortingDTO sorting,
+                [FromQuery] ProductSearchingDTO searching
+            )
         {
-            var products = await _productRepository.ListAsync();
+            var products = await _productRepository.GetAllAsync();
 
             //// Searching
             products = SeaechForProducts(products, searching);
@@ -70,7 +82,7 @@ namespace SportStore.Controllers
             products = SortingProducts(products, sorting);
 
             //// Paging
-            var pagingResult = PagingProducts(products, paging);
+            var pagingResult = PagingProducts(products, paging, _mapper);
 
             if (pagingResult.Paging.TotalRows is 0)
             { return NotFound("No Element Found !!.."); }
@@ -83,6 +95,7 @@ namespace SportStore.Controllers
         }
 
 
+        // GET: /products/availableproducts
         /// <summary>
         ///     Get available (quantity > 0) products with pagination options.
         /// </summary>
@@ -92,16 +105,18 @@ namespace SportStore.Controllers
         /// <response code="200">User logged in successfully.</response>
         /// <response code="404">There are no products with elements provided!.</response> 
         /// <response code="default">Error !.</response> 
-        [HttpGet("availableproducts")] //GET /products/availableproducts
+        [HttpGet("availableproducts")]
         [ProducesResponseType(statusCode: StatusCodes.Status200OK, type: typeof(PagingResult<ProductDTO>))]
         [ProducesResponseType(statusCode: StatusCodes.Status404NotFound)]
         [ProducesDefaultResponseType]
-        public async Task<ActionResult<PagingResult<ProductResult>>> GetAvailableProducts(
-                                                       [FromQuery] PagingDTO paging,
-                                                       [FromQuery] SortingDTO sorting,
-                                                       [FromQuery] ProductSearchingDTO searching)
+        public async Task<ActionResult<PagingResult<ProductResult>>> GetAvailableProducts
+            (
+                [FromQuery] PagingDTO paging,
+                [FromQuery] SortingDTO sorting,
+                [FromQuery] ProductSearchingDTO searching
+            )
         {
-            var availableProducts = ((IEnumerable<Product>)(await _productRepository.ListAsync()))
+            var availableProducts = ((IEnumerable<Product>)(await _productRepository.GetAllAsync()))
                                         .Where(p => p.IsAvalibale == true);
 
             var products = availableProducts.AsQueryable();
@@ -113,19 +128,20 @@ namespace SportStore.Controllers
             products = SortingProducts(products, sorting);
 
             //// Paging
-            var pagingResult = PagingProducts(products, paging);
+            var pagingResult = PagingProducts(products, paging, _mapper);
 
             if (pagingResult.Paging.TotalRows is 0)
-            { return NotFound("No Element Found !!.."); }
+                return NotFound("No Element Found !!..");
 
             var outOfRange = (paging.Page - 1) * paging.Size > pagingResult.Paging.TotalRows;
             if (outOfRange is true)
-            { return NotFound("Out of Range !!.."); }
+                return BadRequest("Out of Range !!..");
 
             return Ok(pagingResult);
         }
 
 
+        // GET: /products/{id}
         /// <summary>
         ///     Get a product by ID.
         /// </summary>
@@ -134,7 +150,7 @@ namespace SportStore.Controllers
         /// <response code="400">The product details is invalid.</response>
         /// <response code="404">The product not found</response>
         /// <response code="default">Error!.</response>
-        [HttpGet("{id:Guid}", Name = nameof(GetProductById))] //GET /products/{id}
+        [HttpGet("{id:Guid}", Name = nameof(GetProductById))]
         [ProducesResponseType(statusCode: StatusCodes.Status200OK, type: typeof(ProductDTO))]
         [ProducesResponseType(statusCode: StatusCodes.Status400BadRequest)]
         [ProducesResponseType(statusCode: StatusCodes.Status404NotFound)]
@@ -151,6 +167,7 @@ namespace SportStore.Controllers
         }
 
 
+        // POST: /products
         /// <summary>
         ///  Create new product. 
         /// </summary>
@@ -170,21 +187,16 @@ namespace SportStore.Controllers
         /// <response code="400"> The product details is invalid!.</response>
         /// <response code="401"> Unauthorized: Should login to call this endpoint!.</response>
         /// <response code="default"> Error!.</response>
-        [HttpPost] //POST /products
+        [HttpPost]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesDefaultResponseType]
-        public async Task<ActionResult> AddProduct(ProductDTO productDTO)
+        public async Task<ActionResult> CreateProduct(ProductDTO productDTO)
         {
-            if (ModelState.IsValid is false)
-                return BadRequest();
-
             if ((await IsSKUExist(productDTO.SKU)) is true)
-            {
                 return BadRequest(@$"The product with SKU: '{productDTO.SKU}' already exist!!.");
-            }
-            
+
             var product = _mapper.Map<Product>(productDTO);
 
             var entity = await _productRepository.AddAsync(product);
@@ -195,6 +207,7 @@ namespace SportStore.Controllers
         }
 
 
+        // PUT: //products/{id:Guid}
         /// <summary>
         ///     Update whole product with specific ID
         /// </summary>
@@ -216,20 +229,18 @@ namespace SportStore.Controllers
         /// <response code="400">The product details is invalid.</response>
         /// <response code="404">The product not found.</response>
         /// <response code="default">Error!.</response>
-        [HttpPut("{id:Guid}")] //PUT //products/{id:Guid}
+        [HttpPut("{id:Guid}")]
         [ProducesResponseType(statusCode: StatusCodes.Status204NoContent)]
         [ProducesResponseType(statusCode: StatusCodes.Status400BadRequest)]
         [ProducesResponseType(statusCode: StatusCodes.Status404NotFound)]
         [ProducesDefaultResponseType]
         public async Task<ActionResult> FullUpdateProductAsync([FromRoute] Guid id, [FromBody] ProductDTO productDTO)
         {
-            if (ModelState.IsValid is false)
-                return BadRequest();
-            var pro = await _productRepository.GetByIdAsync(id);
-            if (pro is null)
+            var product = await _productRepository.GetByIdAsync(id);
+            if (product is null)
                 return NotFound("No product was found!!.");
 
-            if (pro.SKU != productDTO.SKU)
+            if (product.SKU != productDTO.SKU)
             {
                 var isExist = await IsSKUExist(productDTO.SKU);
 
@@ -239,9 +250,7 @@ namespace SportStore.Controllers
 
             try
             {
-                var product = _mapper.Map<Product>(productDTO);
-                product.ProductId = id;
-                var entity = await _productRepository.UpdateAsync(id, product);
+                var entity = await _productRepository.UpdateAsync(product.Update(productDTO));
             }
             catch (DbUpdateConcurrencyException ex)
             {
@@ -256,7 +265,7 @@ namespace SportStore.Controllers
             return NoContent();
         }
 
-
+        // PATCH: //products/{id:Guid}
         /// <summary>
         ///     Update product partially.
         /// </summary>
@@ -277,7 +286,7 @@ namespace SportStore.Controllers
         /// <response code="400">The product details is invalid.</response>
         /// <response code="404">The product not found.</response>
         /// <response code="default">Error!.</response>
-        [HttpPatch("{id:Guid}")] //PATCH //products/{id:Guid}
+        [HttpPatch("{id:Guid}")]
         [ProducesResponseType(statusCode: StatusCodes.Status204NoContent)]
         [ProducesResponseType(statusCode: StatusCodes.Status400BadRequest)]
         [ProducesResponseType(statusCode: StatusCodes.Status404NotFound)]
@@ -303,7 +312,7 @@ namespace SportStore.Controllers
 
             try
             {
-                var entity = await _productRepository.UpdateAsync(id, product);
+                var entity = await _productRepository.UpdateAsync(product);
             }
             catch (DbUpdateConcurrencyException ex)
             {
@@ -319,6 +328,7 @@ namespace SportStore.Controllers
         }
 
 
+        // DELETE: /products/{id:Guid}
         /// <summary>
         /// Delete a single product by ID
         /// </summary>
@@ -326,7 +336,7 @@ namespace SportStore.Controllers
         /// <response code="200">Product deleted successfully.</response>
         /// <response code="404">The product not found.</response>
         /// <response code="default">Error!.</response>
-        [HttpDelete("{id:Guid}")] //DELETE /products/{id:Guid}
+        [HttpDelete("{id:Guid}")]
         [ProducesResponseType(statusCode: StatusCodes.Status200OK)]
         [ProducesResponseType(statusCode: StatusCodes.Status404NotFound)]
         [ProducesDefaultResponseType]
@@ -341,6 +351,8 @@ namespace SportStore.Controllers
             return Ok(result);
         }
 
+
+        // POST: /products/deleteproducts/{ids} === //products/deleteproducts?ids=1&ids=2&ids=3...
         /// <summary>
         /// Delete multiple products by IDs.
         /// </summary>
@@ -349,8 +361,7 @@ namespace SportStore.Controllers
         /// <responce code="404">A product does not exist with prevant deleting the exsiting ones.</responce>
         /// <responce code="default">Error!!</responce>
         /// <returns>List of deleted products.</returns>
-        [HttpPost()] //POST /products/deleteproducts/{ids} || //products/deleteproducts?ids=1&ids=2&ids=3...
-        [Route("deleteproducts")]
+        [HttpPost("multidelete")]
         [ProducesResponseType(statusCode: StatusCodes.Status200OK, type: typeof(List<ProductResult>))]
         public async Task<ActionResult<List<ProductResult>>> DeleteMultiple([FromQuery] Guid[] ids)
         {
@@ -378,71 +389,13 @@ namespace SportStore.Controllers
 
         #region Private Fields
 
-        private IQueryable<Product> SeaechForProducts(IQueryable<Product> products, ProductSearchingDTO searching)
-        {
-            if (!String.IsNullOrEmpty(searching?.SearchTerm))
-            {
-                products = products.Where
-                    (p =>
-                        p.Name.ToLower().Contains(searching.SearchTerm.ToLower())
-                        ||
-                        p.SKU.ToLower().Contains(searching.SearchTerm.ToLower())
-                    );
-            }
-
-            if (searching?.MinPrice is not null)
-            {
-                products = products.Where(p => p.Price >= searching.MinPrice.Value);
-            }
-
-            if (searching?.MaxPrice is not null)
-            {
-                products = products.Where(p => p.Price <= searching.MaxPrice.Value);
-            }
-
-            if (!String.IsNullOrEmpty(searching?.SKU))
-            {
-                products = products.Where(p => p.SKU.ToLower().Contains(searching.SKU.ToLower()));
-            }
-
-            if (!String.IsNullOrEmpty(searching?.Name))
-            {
-                products = products.Where(p => p.Name.ToLower().Contains(searching.Name.ToLower()));
-            }
-
-            return products;
-        }
-
-        private IQueryable<Product> SortingProducts(IQueryable<Product> products, SortingDTO sorting)
-        {
-            if (!String.IsNullOrEmpty(sorting?.SortBy))
-            {
-                var property = typeof(Product)
-                                .GetProperty(sorting.SortBy, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
-
-                if (property is not null)
-                {
-                    products = products.OrderByCustome<Product>(sorting.SortOrder, sorting.SortBy);
-                }
-            }
-
-            return products;
-        }
-
-        private PagingResult<ProductResult> PagingProducts(IQueryable<Product> products, PagingDTO paging)
-        {
-            var productsResult = _mapper.Map<IEnumerable<ProductResult>>(products);
-
-            return new PagingResult<ProductResult>(productsResult, paging);
-        }
-
         private async Task<bool> IsSKUExist(string sku)
         {
-            return (await _productRepository.ListAsync()).AsEnumerable()
+            return (await _productRepository.GetAllAsync()).AsEnumerable()
                                     .Any(p => p.SKU.Equals(sku, StringComparison.OrdinalIgnoreCase));
         }
 
         #endregion
-    
+
     }
 }

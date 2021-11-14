@@ -10,10 +10,10 @@ namespace SportStore.Models
         public bool HasNextPage { get; set; }
         public bool HasPrevPage { get; set; }
 
-        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        [JsonIgnore]
         public string NextPageURL { get; set; }
 
-        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        [JsonIgnore]
         public string PrevPageURL { get; set; }
     }
 }

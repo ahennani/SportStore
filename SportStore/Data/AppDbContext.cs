@@ -36,6 +36,8 @@ namespace SportStore.Data
                 category.HasIndex(c => c.Name).IsUnique();
             });
 
+
+            //// TODO: Fix the relationship between Order & Product
             modelBuilder.Entity<Order>(order =>
             {
                 order.HasMany(o => o.Products)
@@ -49,6 +51,8 @@ namespace SportStore.Data
             modelBuilder.Entity<Product>(product =>
             {
                 product.HasIndex(p => p.SKU).IsUnique();
+                product.Property(p => p.Price)
+                       .HasPrecision(10, 2);
             });
         }
     }

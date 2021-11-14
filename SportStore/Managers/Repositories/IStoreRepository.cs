@@ -12,7 +12,7 @@ namespace SportStore.Managers.Repositories
         Task<TEntity> GetByIdAsync(Guid id);
         Task<TEntity> DeleteAsync(Guid id);
         Task<bool> DeleteRangeAsync(List<TEntity> entities);
-        Task<TEntity> UpdateAsync(Guid id, TEntity entity);
-        Task<IQueryable<TEntity>> ListAsync();
+        Task<TEntity> UpdateAsync(TEntity entity);
+        Task<IQueryable<TEntity>> GetAllAsync();
     }
 }

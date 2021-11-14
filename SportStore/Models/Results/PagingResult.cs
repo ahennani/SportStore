@@ -17,8 +17,8 @@ namespace SportStore.Models.Results
             Paging.TotalRows = query.Count();
             Paging.TotalPages = Convert.ToInt32(Math.Ceiling((double)Paging.TotalRows / clientPaging.Size));
             Paging.CurPage = clientPaging.Page;
-            Paging.HasNextPage = Paging.CurPage < Paging.TotalPages;
             Paging.HasPrevPage = Paging.CurPage > 1;
+            Paging.HasNextPage = Paging.CurPage < Paging.TotalPages;
 
             var paginatingOrder = (clientPaging.Size * (clientPaging.Page - 1));
             var skip = (paginatingOrder < 0) ? 0 : paginatingOrder;

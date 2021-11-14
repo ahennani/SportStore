@@ -18,18 +18,16 @@ namespace SportStore.Helpers
 
             var apiDescription = context.ApiDescription;
 
-            // operation.Deprecated = operation.Deprecated || apiDescription.IsDeprecated();
             operation.Deprecated |= apiDescription.IsDeprecated();
 
-            if (operation.Parameters == null)
+            if (operation.Parameters is null)
             {
                 return;
             }
 
             foreach (var parameter in operation.Parameters)
             {
-                var desc = apiDescription.ParameterDescriptions
-                                         .First(p => p.Name == parameter.Name);
+                var desc = apiDescription.ParameterDescriptions.First(p => p.Name == parameter.Name);
 
                 if (parameter.Description is null)
                 {

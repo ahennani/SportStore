@@ -13,13 +13,11 @@ namespace SportStore.Managers
     {
         private readonly IUserManager _userManager;
         private readonly IMapper _mapper;
-        private readonly IConfiguration _configuration;
 
-        public AuthenticationManager(IUserManager userManager, IMapper mapper, IConfiguration configuration)
+        public AuthenticationManager(IUserManager userManager, IMapper mapper)
         {
             _userManager = userManager;
             _mapper = mapper;
-            _configuration = configuration;
         }
 
         public async Task<AuthResult> UserLoginAsync(UserLoginDTO loginDTO)

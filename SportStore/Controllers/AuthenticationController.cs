@@ -29,8 +29,10 @@ namespace SportStore.Controllers
             _authenticationManager = authenticationService;
         }
 
+
+        // POST: /auth/login
         /// <summary>
-        /// Login and Request Token
+        ///     Login and Request Token
         /// </summary>
         /// <param name="credentials"></param>
         /// <response code="200">User logged in successfully.</response>
@@ -72,6 +74,8 @@ namespace SportStore.Controllers
             return Ok(loggedUser);
         }
 
+
+        // POST: /auth/register
         /// <summary>
         /// Register new user !..
         /// </summary>
@@ -96,14 +100,10 @@ namespace SportStore.Controllers
         [ProducesDefaultResponseType]
         public async Task<IActionResult> SignUp([FromBody] UserAddDTO userDTO)
         {
-            if (ModelState.IsValid is false) { return BadRequest(); }
-
             var result = await _authenticationManager.RegistrationAsync(userDTO);
 
             if (result.Success is false)
-            {
                 return BadRequest(result);
-            }
 
             var loggedUser = new LoggedUserResult
             {
@@ -112,7 +112,7 @@ namespace SportStore.Controllers
                 Token = result.Token
             };
 
-            return CreatedAtAction( nameof(Login), new { Username = userDTO.Username }, loggedUser );
+            return CreatedAtAction( nameof(Login), new { userDTO.Username }, loggedUser );
         }
     }
 }
