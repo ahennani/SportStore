@@ -1,37 +1,31 @@
-﻿using Microsoft.AspNetCore.Mvc.ModelBinding;
-using Newtonsoft.Json;
-using System.Collections.Generic;
-using System.Linq;
+﻿namespace SportStore.Models;
 
-namespace SportStore.Models
+public class ApiError
 {
-    public class ApiError
+    public ApiError() { }
+
+    public ApiError(ModelStateDictionary modelState)
     {
-        public ApiError() { }
+        Message = "Invalid parameters.";
 
-        public ApiError(ModelStateDictionary modelState)
+        Errors = new();
+        if (modelState.ErrorCount > 0)
         {
-            Message = "Invalid parameters.";
-
-            Errors = new();
-            if (modelState.ErrorCount > 0)
+            foreach (var item in modelState)
             {
-                foreach (var item in modelState)
+                foreach (var error in item.Value.Errors)
                 {
-                    foreach (var error in item.Value.Errors)
-                    {
-                        Errors.Add(error.ErrorMessage);
-                    }
+                    Errors.Add(error.ErrorMessage);
                 }
             }
         }
-
-        public string Message { get; set; }
-
-        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
-        public string Details { get; set; }
-
-        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
-        public List<string> Errors { get; set; }
     }
+
+    public string Message { get; set; }
+
+    [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+    public string Details { get; set; }
+
+    [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+    public List<string> Errors { get; set; }
 }

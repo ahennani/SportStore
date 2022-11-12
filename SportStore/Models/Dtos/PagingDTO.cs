@@ -1,16 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿namespace SportStore.Models.Dtos;
 
-namespace SportStore.Models.Dtos
+public class PagingDTO
 {
-    public class PagingDTO
-    {
-        private const int _maxSize = 50;
-        private int _size = 10;
+    private const int _maxSize = 50;
+    private int _size = 10;
 
-        public int Size { get => _size; set => _size = Math.Min(_maxSize, value); }
-        public int Page { get; set; } = 1;
-    }
+    public int Size { get => _size; set => _size = Math.Min(_maxSize, value); }
+    public int Page { get; set; } = 1;
 }

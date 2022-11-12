@@ -1,71 +1,61 @@
-﻿using Microsoft.EntityFrameworkCore;
-using SportStore.Data;
-using SportStore.Managers.Repositories;
-using SportStore.Models.Entities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿namespace SportStore.Managers;
 
-namespace SportStore.Managers
+public class ProductRepository : IStoreRepository<Product>
 {
-    public class ProductRepository : IStoreRepository<Product>
+    private readonly AppDbContext _dbContext;
+
+    public ProductRepository(AppDbContext dbContext)
     {
-        private readonly AppDbContext _dbContext;
+        _dbContext = dbContext;
+    }
 
-        public ProductRepository(AppDbContext dbContext)
-        {
-            _dbContext = dbContext;
-        }
+    public async Task<bool> SaveChangesAsync()
+        => await _dbContext.SaveChangesAsync() > 0;
 
-        public async Task<bool> SaveChangesAsync()
-            => await _dbContext.SaveChangesAsync() > 0;
+    public Task<IQueryable<Product>> GetAllAsync()
+        => Task.Run(() => _dbContext.Products.Include(p => p.Category).AsQueryable());
 
-        public Task<IQueryable<Product>> GetAllAsync()
-            => Task.Run(() => _dbContext.Products.Include(p => p.Category).AsQueryable());
+    public Task<Product> GetByIdAsync(Guid id)
+        => _dbContext.Products.Include(p => p.Category)
+                              .Where(p => p.ProductId == id)
+                              .SingleOrDefaultAsync();
 
-        public Task<Product> GetByIdAsync(Guid id)
-            => _dbContext.Products.Include(p => p.Category)
-                                  .Where(p => p.ProductId == id)
-                                  .SingleOrDefaultAsync();
+    public async Task<Product> AddAsync(Product product)
+    {
+        if (product is null)
+            return null;
 
-        public async Task<Product> AddAsync(Product product)
-        {
-            if (product is null)
-                return null;
+        var entity = await _dbContext.AddAsync(product);
 
-            var entity = await _dbContext.AddAsync(product);
+        return (await SaveChangesAsync()) ? entity.Entity : null;
+    }
 
-            return (await SaveChangesAsync()) ? entity.Entity : null;
-        }
+    public async Task<Product> DeleteAsync(Guid id)
+    {
+        var product = await GetByIdAsync(id);
+        if (product is null)
+            return null;
 
-        public async Task<Product> DeleteAsync(Guid id)
-        {
-            var product = await GetByIdAsync(id);
-            if (product is null)
-                return null;
+        var entity = _dbContext.Products.Remove(product);
+        var result = await SaveChangesAsync();
 
-            var entity = _dbContext.Products.Remove(product);
-            var result = await SaveChangesAsync();
+        return result ? entity.Entity : null;
+    }
 
-            return result ? entity.Entity : null;
-        }
+    public Task<bool> DeleteRangeAsync(List<Product> products)
+    {
+        _dbContext.Products.RemoveRange(products);
 
-        public Task<bool> DeleteRangeAsync(List<Product> products)
-        {
-            _dbContext.Products.RemoveRange(products);
+        return SaveChangesAsync();
+    }
 
-            return SaveChangesAsync();
-        }
+    public async Task<Product> UpdateAsync(Product product)
+    {
+        if (product is null)
+            return null;
 
-        public async Task<Product> UpdateAsync(Product product)
-        {
-            if (product is null)
-                return null;
+        var entity = _dbContext.Products.Update(product);
 
-            var entity = _dbContext.Products.Update(product);
-
-            return await SaveChangesAsync() ? entity.Entity : null;
-        }
+        return await SaveChangesAsync() ? entity.Entity : null;
     }
 }

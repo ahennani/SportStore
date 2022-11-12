@@ -1,83 +1,66 @@
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.ApiExplorer;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using SportStore.Data;
-using SportStore.Extensions;
-using SportStore.Models;
-using System;
+namespace SportStore;
 
-namespace SportStore
+public class Startup
 {
-    public class Startup
+    public Startup(IConfiguration configuration) => Configuration = configuration;
+
+    public IConfiguration Configuration { get; }
+
+    public void ConfigureServices(IServiceCollection services)
     {
-        public Startup(IConfiguration configuration)
+        services.ConfigureMvc();
+        services.ConfigureMapper();
+        services.ConfigureSwagger();
+        services.ConfigureSecurity();
+        services.ConfigureApiVersioning();
+        services.ConfigureJwt(Configuration);
+        services.ConfigureServices(Configuration);
+
+        services.Configure<ApiBehaviorOptions>(options =>
         {
-            Configuration = configuration;
+            // Fires when The ModelState is not valid.
+            options.InvalidModelStateResponseFactory = context =>
+            {
+                    var errorResponse = new ApiError(context.ModelState);
+                    return new BadRequestObjectResult(errorResponse);
+            };
+        });
+    }
+
+    public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IApiVersionDescriptionProvider provider)
+    {
+        if (env.IsDevelopment())
+        {
+            app.UseDeveloperExceptionPage();
+        }
+        else
+        {
+            app.UseHsts();
         }
 
-        public IConfiguration Configuration { get; }
+        app.UseHttpsRedirection();
 
-        public void ConfigureServices(IServiceCollection services)
+        app.UseRouting();
+
+        app.UseCors();
+
+        app.UseAuthentication();
+        app.UseAuthorization();
+
+        app.UseMvc();
+
+        app.UseSwagger();
+        app.UseSwaggerUI(options =>
         {
-            services.ConfigureMvc();
-            services.ConfigureSwagger();
-            services.ConfigureSecurity();
-            services.ConfigureApiVersioning();
-            services.ConfigureJwt(Configuration);
-            services.ConfigureServices(Configuration);
+            // Customize the UI
+            //options.InjectStylesheet("/swagger-ui/custom.css");
 
-            services.Configure<ApiBehaviorOptions>(options =>
+            foreach (var description in provider.ApiVersionDescriptions)
             {
-                // Fires when The ModelState is not valid.
-                options.InvalidModelStateResponseFactory = context =>
-                {
-                        var errorResponse = new ApiError(context.ModelState);
-                        return new BadRequestObjectResult(errorResponse);
-                };
-            });
-        }
-
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IApiVersionDescriptionProvider provider)
-        {
-            if (env.IsDevelopment())
-            {
-                app.UseDeveloperExceptionPage();
+                options.SwaggerEndpoint($"/swagger/{description.GroupName}/swagger.json", description.GroupName.ToUpperInvariant());
             }
-            else
-            {
-                app.UseHsts();
-            }
 
-            app.UseHttpsRedirection();
-
-            app.UseRouting();
-
-            app.UseCors();
-
-            app.UseAuthentication();
-            app.UseAuthorization();
-
-            app.UseMvc();
-
-            app.UseSwagger();
-            app.UseSwaggerUI(options =>
-            {
-                // Customize the UI
-                //options.InjectStylesheet("/swagger-ui/custom.css");
-
-                foreach (var description in provider.ApiVersionDescriptions)
-                {
-                    options.SwaggerEndpoint($"/swagger/{description.GroupName}/swagger.json", description.GroupName.ToUpperInvariant());
-                }
-
-                options.RoutePrefix = String.Empty;
-            });
-        }
+            options.RoutePrefix = String.Empty;
+        });
     }
 }

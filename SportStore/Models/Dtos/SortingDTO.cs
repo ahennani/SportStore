@@ -1,19 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿namespace SportStore.Models.Dtos;
 
-namespace SportStore.Models.Dtos
+public class SortingDTO
 {
-    public class SortingDTO
-    {
-        private string _sortOrder = "asc";
+    private string _sortOrder = "asc";
 
-        public string SortBy { get; set; }
-        public string SortOrder
-        {
-            get => _sortOrder; 
-            set { if (value == "asc" || value == "desc") { _sortOrder = value; } }
-        }
+    public string SortBy { get; set; }
+    public string SortOrder
+    {
+        get => _sortOrder; 
+        set { if (value == "asc" || value == "desc") { _sortOrder = value; } }
     }
 }

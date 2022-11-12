@@ -1,10 +1,7 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿namespace SportStore.Models.Dtos;
 
-namespace SportStore.Models.Dtos
+public class CategoryDTO
 {
-    public class CategoryDTO
-    {
-        [Required, MinLength(4), MaxLength(20)]
-        public string Name { get; set; }
-    }
+    [Required, MinLength(4), MaxLength(20)]
+    public string Name { get; set; }
 }
